@@ -1,0 +1,33 @@
+# Render blueprint — "Apply" this repo and Render provisions everything:
+#   * a free PostgreSQL instance (DATABASE_URL is injected automatically)
+#   * a Node web service that builds the React app and serves it with the API
+#
+# You can ignore this file and click through the dashboard instead — the
+# manual steps are in README.md § Deploying to Render.
+services:
+  - type: web
+    name: secure-dms
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      # Create tables on boot and load the demo accounts when the DB is empty.
+      # Set AUTO_SEED to false once you have real data.
+      - key: AUTO_INIT_DB
+        value: "true"
+      - key: AUTO_SEED
+        value: "true"
+      - key: UPLOAD_DIR
+        value: uploads
+
+databases:
+  - name: secure-dms-db
+    plan: free
+    databaseName: sdms

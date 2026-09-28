@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.vite/
+.env
+!.env.example
+uploads/
+*.log
+.DS_Store
+**/smoke/bundle.mjs

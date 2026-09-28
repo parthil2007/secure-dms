@@ -1,0 +1,19 @@
+{
+  "name": "secure-dms",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SecureDMS - Secure Digital Document Management System (SIH 26190). One deploy hosts the React dashboard and the Express/PostgreSQL API on a single origin.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "start": "node backend/src/server.js",
+    "db:init": "node backend/src/db/init.js",
+    "db:seed": "node backend/src/db/seed.js",
+    "dev:api": "npm run dev --prefix backend",
+    "dev:web": "npm run dev --prefix frontend",
+    "smoke": "npm run smoke --prefix frontend"
+  }
+}
