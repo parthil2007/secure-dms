@@ -18,6 +18,13 @@ services:
         value: production
       - key: JWT_SECRET
         generateValue: true
+      # Injected from the Postgres instance declared below — without this
+      # `fromDatabase` binding the variable never appears and boot fails with
+      # "SASL: client password must be a string".
+      - key: DATABASE_URL
+        fromDatabase:
+          name: secure-dms-db
+          property: connectionString
       # Create tables on boot and load the demo accounts when the DB is empty.
       # Set AUTO_SEED to false once you have real data.
       - key: AUTO_INIT_DB
