@@ -129,6 +129,28 @@ Then open `https://<your-app>.onrender.com`:
 
 ---
 
+## What actually broke on the first deploy
+
+These are real bugs from the first bring-up — worth knowing before you redeploy:
+
+1. **Service stuck on "Starting" forever.** The server `await`ed the database
+   bootstrap *before* `app.listen()`. Render only marks a deploy live once
+   `/api/health` answers, so a slow Postgres meant nothing ever bound the port →
+   health-check timeout → restart loop. **Fix:** listen first, bootstrap in the
+   background, and report `db: starting|ready|down` from a variable instead of
+   querying. Never gate the port on the database.
+2. **`sh: 1: vite: not found`.** `NODE_ENV=production` makes npm omit
+   devDependencies, and vite/tailwind/@vitejs/plugin-react are devDependencies.
+   **Fix:** the root build script installs with `--include=dev`.
+3. **`repository URL is invalid or unfetchable`.** Render could not read the
+   private repo — it is only granted access to repositories you select for its
+   GitHub App. Public repos need no grant at all.
+
+Also note: changing environment variables does **not** redeploy by itself —
+trigger `POST /v1/services/{id}/deploys` (or press Deploy in the dashboard).
+
+---
+
 ## Environment variable reference
 
 | Name | Default | Purpose |
