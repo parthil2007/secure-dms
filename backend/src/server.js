@@ -39,8 +39,17 @@ app.use(express.urlencoded({ extended: true }));
 fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
 app.use('/uploads', express.static(UPLOAD_ROOT, { dotfiles: 'deny', index: false }));
 
+// Tracks bootstrap progress so the health check can answer without ever
+// touching Postgres (see the note above app.listen below).
+let dbState = 'starting';
+
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'secure-dms-api', time: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    service: 'secure-dms-api',
+    db: dbState,
+    time: new Date().toISOString(),
+  });
 });
 
 app.use('/api', authRoutes);
@@ -129,20 +138,38 @@ async function bootstrapDatabase() {
           await seed();
         }
       }
+      dbState = 'ready';
       return;
     } catch (err) {
       console.error(`Database bootstrap attempt ${i}/${attempts} failed: ${err.message}`);
       if (i < attempts) await new Promise((r) => setTimeout(r, 3000));
     }
   }
+  dbState = 'down';
   console.error(
     'Giving up on database bootstrap — the API will return 500s until the database is reachable.'
   );
 }
 
-await bootstrapDatabase();
-
-app.listen(PORT, () => {
+/**
+ * Bind the port FIRST, then bootstrap in the background.
+ *
+ * Render marks a deploy live only after /api/health answers. Awaiting the
+ * database before `listen()` meant a slow or unreachable Postgres kept the
+ * service in "Starting" until the health check timed out — and then it
+ * restart-looped forever. The API is up immediately; the first data requests
+ * return 500 (or `db: "starting"`) for the few seconds the schema needs.
+ */
+const server = app.listen(PORT, () => {
   console.log(`SecureDMS API listening on http://localhost:${PORT}`);
   console.log(hasFrontend ? `Serving dashboard from ${FRONTEND_DIST}` : 'No frontend build found (dev mode)');
+  bootstrapDatabase().catch((err) => {
+    dbState = 'down';
+    console.error('Database bootstrap crashed:', err.message);
+  });
+});
+
+server.on('error', (err) => {
+  console.error(`Server failed to listen on port ${PORT}: ${err.message}`);
+  process.exit(1);
 });
