@@ -8,7 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "build": "npm install --prefix backend --include=dev && npm install --prefix frontend --include=dev && npm run build --prefix frontend",
     "start": "node backend/src/server.js",
     "db:init": "node backend/src/db/init.js",
     "db:seed": "node backend/src/db/seed.js",
